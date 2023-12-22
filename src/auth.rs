@@ -26,6 +26,20 @@ pub async fn register(
     State(state): State<AppState>,
     Json(form): Json<RegisterForm>,
 ) -> Result<impl IntoResponse, AppError> {
+    // Db connection
+    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    // Check for conflict before hashing because hashing takes a while
+    if users::table
+        .filter(users::email.eq(form.email.clone()))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .await
+        .map_err(AppError::Diesel)?
+        != 0
+    {
+        return Ok(StatusCode::CONFLICT);
+    };
+
     let user = User {
         id: Uuid::new_v4(),
         email: form.email,
@@ -33,8 +47,6 @@ pub async fn register(
         last_name: form.last_name,
         password: hash(form.password, DEFAULT_COST).map_err(AppError::Bcrypt)?,
     };
-
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
 
     diesel::insert_into(users::table)
         .values(user)
