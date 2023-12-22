@@ -78,7 +78,7 @@ pub async fn login(
         .map_err(AppError::Diesel)?
     {
         Some(user) => user,
-        None => return Err(AppError::Status(StatusCode::NOT_FOUND)),
+        None => return Err(AppError::Status(StatusCode::UNAUTHORIZED)),
     };
     // Verify if the form password is equal to to hash stored on the database
     if !verify(form.password, &user.password).map_err(AppError::Bcrypt)? {

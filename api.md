@@ -4,10 +4,10 @@
 ### Register
 
 #### Request 
+> **Content-Type : application/json** 
 ```http
 POST /auth/register
 ```
-> **Content-Type : application/json** 
 
 #### Expected form
 
@@ -23,8 +23,55 @@ POST /auth/register
 #### Status Codes
 | Status Code | Description |
 |-------------|-------------|
-| 201        | Everything was succesful and the user has been added |
-| 400        | Malformed parameters or other bad request |
-| 409        | Conflict somebody else has the same email |
-| 500        | Something went wrong on the server most likley a db or a bcrypt error |
+| 201         | Everything was succesful and the user has been added |
+| 400         | Malformed parameters or other bad request |
+| 409         | Conflict somebody else has the same email |
+| 500         | Something went wrong on the server most likley a db or a bcrypt error|
+### Login
+#### Request
+> **Content-Type : application/json** 
+```http
+POST /auth/login
+```
 
+#### Expected Form
+```json
+{
+    "email" : "testing@gmail.com",
+    "password" : "password",
+}
+```
+
+#### Status Codes
+| Status Code | Description| 
+|-------------|------------|
+| 200         | Everything was succesful and a session_id cookie will be sent back |
+| 400         | Malformed request body |  
+| 401         | Password was incorrect or user was not found | 
+| 500         | Server error something went wrong |
+
+## Goals 
+
+### Create
+#### Request
+> **Content-Type : application/json** 
+```http
+POST /goals/create
+```
+#### Requirements
+To make this request there must be a valid session_id cookie in the request otherwise you will be sent back a 401(Unauthorized)
+
+#### Expected Form
+```json
+{
+   "title" : "Workout",
+   "description" : "Work out at least once a week"
+}
+```
+#### Status Codes
+| Status Code | Description| 
+|-------------|------------|
+| 201         | Everything was succesful and a session_id cookie will be sent back |
+| 400         | Malformed request body |  
+| 401         | Password was incorrect or user was not found | 
+| 500         | Server error something went wrong |
