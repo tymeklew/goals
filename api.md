@@ -7,7 +7,7 @@
 ```http
 POST /auth/register
 ```
-> **Content-Type : application/json** \
+> **Content-Type : application/json** 
 
 #### Expected form
 
@@ -19,4 +19,9 @@ POST /auth/register
     "password" : "password"
 }
 ```
+
+#### Status Codes
+- 409 : Conflict someone has the same email
+- 500 : Something went wrong most likley a database error or a bcrypt hashing error
+- 201 : Everything was succesful and the user was created
 
