@@ -1,9 +1,10 @@
-use crate::db::model::Session;
-use crate::db::schema::{sessions, users};
+use crate::db::model::{Reset, Session};
+use crate::db::schema::{resets, sessions, users};
 use crate::error::AppError;
+use crate::util;
 use crate::validate::validate_password;
 use crate::{db::model::User, AppState};
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::{response::IntoResponse, Json};
 use axum_extra::extract::{cookie::Cookie, CookieJar};
@@ -11,6 +12,9 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use diesel::prelude::*;
 use diesel::OptionalExtension;
 use diesel_async::RunQueryDsl;
+use lettre::message::header::ContentType;
+use lettre::{AsyncTransport, Message};
+use log2::info;
 use serde::Deserialize;
 use uuid::Uuid;
 use validator::Validate;
@@ -53,13 +57,15 @@ pub async fn register(
         password: hash(form.password, DEFAULT_COST).map_err(AppError::Bcrypt)?,
     };
 
+    info!("New user id : {}", user.id);
+
     diesel::insert_into(users::table)
         .values(user)
         .execute(&mut conn)
         .await
         .map_err(AppError::Diesel)?;
 
-    return Ok(StatusCode::CREATED);
+    Ok(StatusCode::CREATED)
 }
 
 #[derive(Deserialize, Validate)]
@@ -99,7 +105,7 @@ pub async fn login(
     };
 
     // Clone session.id because when inserting it will consume it and I need to use it later
-    let session_id = session.id.clone();
+    let session_id = session.id;
 
     // Save session
     diesel::insert_into(sessions::table)
@@ -116,5 +122,83 @@ pub async fn login(
 }
 
 // Make a new reset request
-pub async fn new_reset() {}
-pub async fn reset() {}
+// /auth/reset/:email
+pub async fn new_reset(
+    Path(email): Path<String>,
+    State(state): State<AppState>,
+) -> Result<StatusCode, AppError> {
+    info!("Resetting {email}");
+
+    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+
+    let user_id = users::table
+        .filter(users::email.eq(email.clone()))
+        .select(users::id)
+        .first::<Uuid>(&mut conn)
+        .await
+        .optional()
+        .map_err(AppError::Diesel)?
+        .ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
+
+    let reset = Reset {
+        id: Uuid::new_v4(),
+        token: util::generate_token(),
+        user_id,
+    };
+
+    diesel::insert_into(resets::table)
+        .values(reset.clone())
+        .execute(&mut conn)
+        .await
+        .map_err(AppError::Diesel)?;
+
+    let mail = Message::builder()
+        .from(state.config.email.into())
+        .to(email.parse().map_err(AppError::Address)?)
+        .subject("Password reset")
+        .header(ContentType::TEXT_PLAIN)
+        .body(format!(
+            "http://localhost:8080/reset?token={}&reset_id={}",
+            reset.token, reset.id
+        ))
+        .map_err(|_| AppError::Status(StatusCode::BAD_REQUEST))?;
+
+    state.mailer.send(mail).await.map_err(AppError::Lettre)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Deserialize)]
+pub struct ResetForm {
+    token: String,
+    reset_id: Uuid,
+    password: String,
+}
+// /auth/reset?token=<token>&reset_id=<reset_id>
+// Json body with passwd
+pub async fn reset(
+    State(state): State<AppState>,
+    Json(form): Json<ResetForm>,
+) -> Result<StatusCode, AppError> {
+    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+
+    let reset = resets::table
+        .filter(resets::id.eq(form.reset_id))
+        .first::<Reset>(&mut conn)
+        .await
+        .map_err(AppError::Diesel)?;
+
+    if reset.token != form.token {
+        return Err(AppError::Status(StatusCode::UNAUTHORIZED));
+    }
+
+    let hashed = hash(form.password, DEFAULT_COST).map_err(AppError::Bcrypt)?;
+
+    diesel::update(users::table)
+        .set(users::password.eq(hashed))
+        .execute(&mut conn)
+        .await
+        .map_err(AppError::Diesel)?;
+
+    Ok(StatusCode::OK)
+}

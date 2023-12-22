@@ -16,6 +16,7 @@ use axum_extra::extract::CookieJar;
 use diesel::prelude::*;
 use diesel::SelectableHelper;
 use diesel_async::RunQueryDsl;
+use rand::{distributions::Alphanumeric, Rng};
 use uuid::Uuid;
 
 pub async fn authorization(
@@ -47,4 +48,12 @@ pub async fn authorization(
 
     request.extensions_mut().insert(user);
     Ok(next.run(request).await)
+}
+
+pub fn generate_token() -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(16)
+        .map(char::from)
+        .collect()
 }

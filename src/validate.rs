@@ -9,7 +9,7 @@ const MAX_PASSWORD_LEN: u8 = 20;
 pub fn validate_password(password: &str) -> Result<(), ValidationError> {
     let len = password.len() as u8;
 
-    if len > MAX_PASSWORD_LEN || len < MIN_PASSWORD_LEN {
+    if !(MIN_PASSWORD_LEN..=MAX_PASSWORD_LEN).contains(&len) {
         return Err(ValidationError::new(
             "Password must be between 3 and 20 characters long",
         ));

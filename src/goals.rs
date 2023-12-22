@@ -38,7 +38,7 @@ pub async fn create(
         description: form.description,
     };
 
-    let goal_id = goal.id.clone();
+    let goal_id = goal.id;
 
     let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
 

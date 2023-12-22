@@ -2,6 +2,9 @@ use axum::{http::StatusCode, response::IntoResponse};
 use bcrypt::BcryptError;
 use diesel::result::DatabaseErrorKind as DbErrorKind;
 use diesel::result::Error as DieselError;
+use lettre::address::AddressError;
+use lettre::transport::smtp::Error as LettreError;
+use log2::error;
 use validator::ValidationErrors;
 use validator::ValidationErrorsKind;
 
@@ -10,6 +13,10 @@ pub enum AppError {
     Deadpool,
     // Diesel error
     Diesel(DieselError),
+    // Lettre
+    Lettre(LettreError),
+    // Address error
+    Address(AddressError),
     // Bcrypt
     Bcrypt(BcryptError),
     // Status
@@ -20,27 +27,20 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
+        error!("Error : {self}");
         match self {
             Self::Status(status) => status.into_response(),
             Self::Validate(err) => {
-                let errors = err
-                    .into_errors()
-                    .iter()
-                    .map(|val| {
-                        format!("{} : {:#?}", val.0, display_validation_error(val.1.clone()))
-                    })
-                    .collect::<String>();
+                let errors = err.into_errors().iter().fold(String::new(), |acc, new| {
+                    acc + &format!("{} : {:#?}", new.0, display_validation_error(new.1.clone()))
+                });
 
                 (StatusCode::BAD_REQUEST, errors).into_response()
             }
-            Self::Diesel(err) => match err {
-                DieselError::DatabaseError(err, _) => match err {
-                    // Check if it is a key issue and then send back conflict
-                    DbErrorKind::UniqueViolation => StatusCode::CONFLICT.into_response(),
-                    _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-                },
-                _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-            },
+            // Voileted unique key so sending back conflict instead
+            Self::Diesel(DieselError::DatabaseError(DbErrorKind::UniqueViolation, _)) => {
+                StatusCode::CONFLICT.into_response()
+            }
             _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
@@ -49,12 +49,23 @@ impl IntoResponse for AppError {
 fn display_validation_error(error: ValidationErrorsKind) -> String {
     match error {
         ValidationErrorsKind::Field(errors) => {
-            if errors.len() <= 0 {
+            if errors.is_empty() {
                 return String::new();
             }
 
             return errors.first().unwrap().code.to_string() + "\n";
         }
         _ => String::new(),
+    }
+}
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Deadpool => write!(f, "Diesel error idk"),
+            Self::Diesel(err) => err.fmt(f),
+            Self::Bcrypt(err) => err.fmt(f),
+            _ => write!(f, ""),
+        }
     }
 }

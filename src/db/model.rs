@@ -16,6 +16,7 @@ use uuid::Uuid;
     Clone,
 )]
 #[diesel(table_name=users)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct User {
     pub id: Uuid,
     pub email: String,
@@ -27,6 +28,7 @@ pub struct User {
 #[derive(Deserialize, Serialize, Debug, Associations, Identifiable, Queryable, Insertable)]
 #[diesel(belongs_to(User))]
 #[diesel(table_name=goals)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Goal {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -47,7 +49,20 @@ pub struct Goal {
 )]
 #[diesel(belongs_to(User))]
 #[diesel(table_name=sessions)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,
+}
+
+#[derive(
+    Deserialize, Clone, Debug, Selectable, Identifiable, Queryable, Insertable, Associations,
+)]
+#[diesel(table_name=resets)]
+#[diesel(belongs_to(User))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Reset {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub token: String,
 }
