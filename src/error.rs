@@ -2,7 +2,6 @@ use axum::{http::StatusCode, response::IntoResponse};
 use bcrypt::BcryptError;
 use diesel::result::DatabaseErrorKind as DbErrorKind;
 use diesel::result::Error as DieselError;
-use lettre::address::AddressError;
 use lettre::transport::smtp::Error as LettreError;
 use log2::error;
 use validator::ValidationErrors;
@@ -15,8 +14,6 @@ pub enum AppError {
     Diesel(DieselError),
     // Lettre
     Lettre(LettreError),
-    // Address error
-    Address(AddressError),
     // Bcrypt
     Bcrypt(BcryptError),
     // Status

@@ -64,27 +64,32 @@ async fn main() {
     dotenv::dotenv().expect("Failed to load env variables");
 
     // Logger setup
-    let _log2 = log2::open("log.txt").tee(true).start();
+    log2::open("log.txt")
+        .module(true)
+        .level("info")
+        .tee(true)
+        .start();
 
     let state = AppState::new().await;
 
     let app = Router::new()
-        .route("/goals/create", post(goals::create))
-        .route("/goals/view", get(goals::view_all))
-        .route("/goals/view/:id", get(goals::view_one))
+        .route("/api/goals/create", post(goals::create))
+        .route("/api/goals/view", get(goals::view_all))
+        .route("/api/goals/view/:id", get(goals::view_one))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             util::authorization,
         ))
-        .route("/auth/register", post(auth::register))
-        .route("/auth/login", post(auth::login))
-        .route("/auth/reset/:email", post(auth::new_reset))
-        .route("/auth/reset", post(auth::reset))
+        .route("/api/auth/register", post(auth::register))
+        .route("/api/auth/login", post(auth::login))
+        .route("/api/auth/reset/:email", post(auth::new_reset))
+        .route("/api/auth/reset", post(auth::reset))
         .nest_service(
             "/",
             ServeDir::new("./client/dist")
                 .not_found_service(ServeFile::new("./client/dist/index.html")),
         )
+        .route_layer(middleware::from_fn(util::logging))
         .with_state(state);
 
     let listener =

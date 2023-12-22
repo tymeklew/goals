@@ -16,6 +16,7 @@ use axum_extra::extract::CookieJar;
 use diesel::prelude::*;
 use diesel::SelectableHelper;
 use diesel_async::RunQueryDsl;
+use log2::{error, info, level, trace};
 use rand::{distributions::Alphanumeric, Rng};
 use uuid::Uuid;
 
@@ -31,16 +32,16 @@ pub async fn authorization(
         .value()
         .trim();
 
-    let _session_id = Uuid::parse_str(val).unwrap();
+    let session_id = Uuid::parse_str(val).unwrap();
 
-    let mut _conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
 
     // Get the user from the session_id
     let user = users::table
         .inner_join(sessions::table)
-        .filter(sessions::id.eq(_session_id))
+        .filter(sessions::id.eq(session_id))
         .select(User::as_select())
-        .first::<User>(&mut _conn)
+        .first::<User>(&mut conn)
         .await
         .optional()
         .map_err(AppError::Diesel)?
@@ -48,6 +49,14 @@ pub async fn authorization(
 
     request.extensions_mut().insert(user);
     Ok(next.run(request).await)
+}
+
+pub async fn logging(request: Request, next: Next) -> Result<Response, AppError> {
+    println!("Logg");
+    info!("Testing");
+    let res = next.run(request).await;
+    info!("Testing");
+    Ok(res)
 }
 
 pub fn generate_token() -> String {

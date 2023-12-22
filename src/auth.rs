@@ -117,6 +117,7 @@ pub async fn login(
     let mut cookie = Cookie::new("session_id", session_id.to_string());
     cookie.set_path("/");
     cookie.set_http_only(true);
+    cookie.set_domain(state.config.domain);
 
     Ok(jar.add(cookie))
 }
@@ -154,12 +155,14 @@ pub async fn new_reset(
 
     let mail = Message::builder()
         .from(state.config.email.into())
-        .to(email.parse().map_err(AppError::Address)?)
+        .to(email
+            .parse()
+            .map_err(|_| AppError::Status(StatusCode::BAD_REQUEST))?)
         .subject("Password reset")
         .header(ContentType::TEXT_PLAIN)
         .body(format!(
-            "http://localhost:8080/reset?token={}&reset_id={}",
-            reset.token, reset.id
+            "{}/reset?token={}&reset_id={}",
+            state.config.domain, reset.token, reset.id
         ))
         .map_err(|_| AppError::Status(StatusCode::BAD_REQUEST))?;
 
@@ -194,8 +197,16 @@ pub async fn reset(
 
     let hashed = hash(form.password, DEFAULT_COST).map_err(AppError::Bcrypt)?;
 
+    // Update the user password with the hashed updated password
     diesel::update(users::table)
         .set(users::password.eq(hashed))
+        .execute(&mut conn)
+        .await
+        .map_err(AppError::Diesel)?;
+
+    // Delete reset in database
+    diesel::delete(resets::table)
+        .filter(resets::id.eq(reset.id))
         .execute(&mut conn)
         .await
         .map_err(AppError::Diesel)?;
