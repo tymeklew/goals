@@ -58,8 +58,7 @@ POST /auth/login
 ```http
 POST /goals/create
 ```
-#### Requirements
-To make this request there must be a valid session_id cookie in the request otherwise you will be sent back a 401(Unauthorized)
+> **There must be a valid session_id cookie in the request otherwise will be sent back a 401 (Unathorized)** 
 
 #### Expected Form
 ```json
