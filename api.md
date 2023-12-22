@@ -79,6 +79,8 @@ POST /goals/create
 ### Request
 ```http
 GET /goals/view
+```
+```http
 Get /goals/view/:id
 ```
 First request is for viewing all of the goals wherease the second one is for viewing a specific one with that id
