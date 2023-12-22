@@ -24,7 +24,8 @@ pub struct User {
     pub password: String,
 }
 
-#[derive(Deserialize, Serialize, Queryable, Insertable)]
+#[derive(Deserialize, Serialize, Debug, Associations, Identifiable, Queryable, Insertable)]
+#[diesel(belongs_to(User))]
 #[diesel(table_name=goals)]
 pub struct Goal {
     pub id: Uuid,

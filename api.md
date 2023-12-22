@@ -1,5 +1,6 @@
 # Authentication
 ## Register
+Create a new account
 
 ### Request 
 > **Content-Type : application/json** 
@@ -27,6 +28,7 @@ POST /auth/register
 | 500         | Something went wrong on the server most likley a db or a bcrypt error|
 ## Login
 ### Request
+Login to a previously created account
 > **Content-Type : application/json** 
 ```http
 POST /auth/login
@@ -49,7 +51,7 @@ POST /auth/login
 | 500         | Server error something went wrong |
 
 # Goals 
-
+Endpoints to create goals and others
 ## Create
 ### Request
 > **Content-Type : application/json** 

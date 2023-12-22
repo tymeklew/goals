@@ -1,6 +1,7 @@
 use crate::db::model::Session;
 use crate::db::schema::{sessions, users};
 use crate::error::AppError;
+use crate::validate::validate_password;
 use crate::{db::model::User, AppState};
 use anyhow::Result;
 use axum::extract::State;
@@ -13,12 +14,15 @@ use diesel::OptionalExtension;
 use diesel_async::RunQueryDsl;
 use serde::Deserialize;
 use uuid::Uuid;
+use validator::Validate;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct RegisterForm {
+    #[validate(email)]
     pub email: String,
     pub first_name: String,
     pub last_name: String,
+    #[validate(custom = "validate_password")]
     pub password: String,
 }
 
@@ -26,6 +30,8 @@ pub async fn register(
     State(state): State<AppState>,
     Json(form): Json<RegisterForm>,
 ) -> Result<impl IntoResponse, AppError> {
+    form.validate().map_err(AppError::Validate)?;
+
     // Db connection
     let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
     // Check for conflict before hashing because hashing takes a while
@@ -57,8 +63,9 @@ pub async fn register(
     return Ok(StatusCode::CREATED);
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct LoginForm {
+    #[validate(email)]
     pub email: String,
     pub password: String,
 }
@@ -68,6 +75,8 @@ pub async fn login(
     jar: CookieJar,
     Json(form): Json<LoginForm>,
 ) -> Result<CookieJar, AppError> {
+    form.validate().map_err(AppError::Validate)?;
+
     let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
 
     let user = match users::table

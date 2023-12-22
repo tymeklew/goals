@@ -1,5 +1,8 @@
 use axum::Router;
-use axum::{middleware, routing::post};
+use axum::{
+    middleware,
+    routing::{get, post},
+};
 use diesel_async::{
     pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
     AsyncPgConnection,
@@ -11,6 +14,7 @@ mod db;
 mod error;
 mod goals;
 mod util;
+mod validate;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -37,6 +41,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/goals/create", post(goals::create))
+        .route("/goals/view", get(goals::view_all))
+        .route("/goals/view/:id", get(goals::view_one))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             util::authorization,

@@ -10,8 +10,7 @@ use axum::{
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
-    response::{IntoResponse, Response},
-    Extension,
+    response::Response,
 };
 use axum_extra::extract::CookieJar;
 use diesel::prelude::*;
