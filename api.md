@@ -2,11 +2,15 @@
 
 ## Authentication
 ### Register
+
+#### Request 
 ```http
 POST /auth/register
 ```
-> **Content-Type : application/json**
-Expected form
+> **Content-Type : application/json** \
+
+#### Expected form
+
 ```json
 {
     "email" : "testing@gmail.com",
