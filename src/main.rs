@@ -36,6 +36,7 @@ async fn main() {
     let state = AppState::new();
 
     let app = Router::new()
+        .route("/goals/create", post(goals::create))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             util::authorization,
@@ -44,9 +45,10 @@ async fn main() {
         .route("/auth/login", post(auth::login))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
-        .await
-        .expect("Failed to bind to listener");
+    let listener =
+        tokio::net::TcpListener::bind(var("PORT").expect("Failed to find port in enviroment"))
+            .await
+            .expect("Failed to bind to listener");
 
     axum::serve(listener, app)
         .await

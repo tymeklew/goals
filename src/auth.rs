@@ -7,6 +7,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{response::IntoResponse, Json};
 use axum_extra::extract::{cookie::Cookie, CookieJar};
+use bcrypt::{hash, verify, DEFAULT_COST};
 use diesel::prelude::*;
 use diesel::OptionalExtension;
 use diesel_async::RunQueryDsl;
@@ -30,7 +31,7 @@ pub async fn register(
         email: form.email,
         first_name: form.first_name,
         last_name: form.last_name,
-        password: form.password,
+        password: hash(form.password, DEFAULT_COST).map_err(AppError::Bcrypt)?,
     };
 
     let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
@@ -39,7 +40,7 @@ pub async fn register(
         .values(user)
         .execute(&mut conn)
         .await
-        .map_err(|_| AppError::Diesel)?;
+        .map_err(AppError::Diesel)?;
 
     return Ok(StatusCode::CREATED);
 }
@@ -53,7 +54,7 @@ pub struct LoginForm {
 pub async fn login(
     State(state): State<AppState>,
     jar: CookieJar,
-    Json(form): Json<RegisterForm>,
+    Json(form): Json<LoginForm>,
 ) -> Result<CookieJar, AppError> {
     let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
 
@@ -62,13 +63,13 @@ pub async fn login(
         .get_result::<User>(&mut conn)
         .await
         .optional()
-        .map_err(|_| AppError::Diesel)?
+        .map_err(AppError::Diesel)?
     {
         Some(user) => user,
         None => return Err(AppError::Status(StatusCode::NOT_FOUND)),
     };
-
-    if user.password != form.password {
+    // Verify if the form password is equal to to hash stored on the database
+    if !verify(form.password, &user.password).map_err(AppError::Bcrypt)? {
         return Err(AppError::Status(StatusCode::UNAUTHORIZED));
     }
 
@@ -77,6 +78,7 @@ pub async fn login(
         user_id: user.id,
     };
 
+    // Clone session.id because when inserting it will consume it and I need to use it later
     let session_id = session.id.clone();
 
     // Save session
@@ -84,7 +86,10 @@ pub async fn login(
         .values(session)
         .execute(&mut conn)
         .await
-        .map_err(|_| AppError::Diesel)?;
+        .map_err(AppError::Diesel)?;
 
-    Ok(jar.add(Cookie::new("session_id", session_id.to_string())))
+    let mut cookie = Cookie::new("session_id", session_id.to_string());
+    cookie.set_path("/");
+
+    Ok(jar.add(cookie))
 }

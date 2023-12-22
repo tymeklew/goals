@@ -3,7 +3,18 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize, Selectable, Queryable, Insertable, PartialEq, Eq, Clone)]
+#[derive(
+    Deserialize,
+    Debug,
+    Serialize,
+    Identifiable,
+    Selectable,
+    Queryable,
+    Insertable,
+    PartialEq,
+    Eq,
+    Clone,
+)]
 #[diesel(table_name=users)]
 pub struct User {
     pub id: Uuid,
@@ -22,9 +33,19 @@ pub struct Goal {
     pub description: String,
 }
 
-#[derive(Deserialize, Serialize, Selectable, Queryable, Insertable, Associations)]
-#[diesel(table_name=sessions)]
+#[derive(
+    Deserialize,
+    Debug,
+    Serialize,
+    Selectable,
+    Identifiable,
+    Queryable,
+    Insertable,
+    Associations,
+    PartialEq,
+)]
 #[diesel(belongs_to(User))]
+#[diesel(table_name=sessions)]
 pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,

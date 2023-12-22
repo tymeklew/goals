@@ -8,5 +8,17 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-   id 
+   id uuid NOT NULL,
+   user_id uuid NOT NULL,
+   PRIMARY KEY (id),
+   FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS goals (
+   id uuid NOT NULL,
+   user_id uuid NOT NULL,
+   title text NOT NULL,
+   description text NOT NULL,
+   PRIMARY KEY (id),
+   FOREIGN KEY (user_id) REFERENCES users(id)
 );

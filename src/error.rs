@@ -4,7 +4,9 @@ pub enum AppError {
     // Error for getting connection to database
     Deadpool,
     // Diesel error
-    Diesel,
+    Diesel(diesel::result::Error),
+    // Bcrypt
+    Bcrypt(bcrypt::BcryptError),
     // Status
     Status(StatusCode),
 }
@@ -12,9 +14,8 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Deadpool => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-            Self::Diesel => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
             Self::Status(status) => status.into_response(),
+            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
 }

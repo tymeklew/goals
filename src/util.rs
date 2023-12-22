@@ -2,46 +2,32 @@ use axum::{
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
+    Extension,
 };
 use axum_extra::extract::CookieJar;
-use diesel::prelude::*;
-use diesel::OptionalExtension;
-use diesel_async::RunQueryDsl;
 
-use crate::{
-    db::{
-        model::User,
-        schema::{sessions, users},
-    },
-    error::AppError,
-    AppState,
-};
+use uuid::Uuid;
+
+use crate::{error::AppError, AppState};
 
 pub async fn authorization(
     State(state): State<AppState>,
     jar: CookieJar,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Result<Response, AppError> {
-    let session_id = jar
+    let val = jar
         .get("session_id")
         .ok_or(AppError::Status(StatusCode::UNAUTHORIZED))?
         .value()
         .trim();
 
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let _session_id = Uuid::parse_str(val).unwrap();
 
-    let user: User = sessions::table
-        .inner_join(users::table)
-        .filter(sessions::id.eq(uuid::Uuid::parse_str(session_id).unwrap()))
-        .select(User::as_select())
-        .first::<User>(&mut conn)
-        .await
-        .optional()
-        .map_err(|_| AppError::Diesel)?
-        .ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
+    let mut _conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
 
-    request.extensions_mut().insert(user);
+    // need to finish off
+
     Ok(next.run(request).await)
 }

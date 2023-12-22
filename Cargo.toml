@@ -13,6 +13,7 @@ diesel-async = {version = "0.4.1" , features = ["deadpool" , "postgres"]}
 serde = {version = "1.0.193" , features = ["derive"]}
 dotenv = "0.15.0"
 uuid = {version = "1.6.1" , features = ["v4" , "serde"]}
-deadpool = "0.10.0"
+deadpool = {version = "0.10.0" , features = ["managed"]}
 anyhow = "1.0.76"
 axum-extra = {version = "0.9.0" , features = ["cookie"]}
+bcrypt = "0.15.0"
