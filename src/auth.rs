@@ -3,7 +3,6 @@ use crate::db::schema::{sessions, users};
 use crate::error::AppError;
 use crate::validate::validate_password;
 use crate::{db::model::User, AppState};
-use anyhow::Result;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{response::IntoResponse, Json};
@@ -115,3 +114,7 @@ pub async fn login(
 
     Ok(jar.add(cookie))
 }
+
+// Make a new reset request
+pub async fn new_reset() {}
+pub async fn reset() {}

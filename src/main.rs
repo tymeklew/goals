@@ -8,6 +8,7 @@ use diesel_async::{
     AsyncPgConnection,
 };
 use std::env::var;
+use tower_http::services::{ServeDir, ServeFile};
 
 mod auth;
 mod db;
@@ -49,6 +50,11 @@ async fn main() {
         ))
         .route("/auth/register", post(auth::register))
         .route("/auth/login", post(auth::login))
+        .nest_service(
+            "/",
+            ServeDir::new("./client/dist")
+                .not_found_service(ServeFile::new("./client/dist/index.html")),
+        )
         .with_state(state);
 
     let listener =

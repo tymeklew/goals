@@ -30,13 +30,15 @@ pub async fn create(
     Extension(user): Extension<User>,
     State(state): State<AppState>,
     Json(form): Json<CreateGoalForm>,
-) -> Result<StatusCode, AppError> {
+) -> Result<(StatusCode, String), AppError> {
     let goal = Goal {
         id: Uuid::new_v4(),
         user_id: user.id,
         title: form.title,
         description: form.description,
     };
+
+    let goal_id = goal.id.clone();
 
     let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
 
@@ -46,7 +48,7 @@ pub async fn create(
         .await
         .map_err(AppError::Diesel)?;
 
-    Ok(StatusCode::CREATED)
+    Ok((StatusCode::CREATED, goal_id.to_string()))
 }
 
 pub async fn view_all(

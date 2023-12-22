@@ -22,3 +22,9 @@ CREATE TABLE IF NOT EXISTS goals (
    PRIMARY KEY (id),
    FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS resets (
+   id uuid NOT NULL,
+   user_id uuid NOT NULL,
+   token text NOT NULL
+); 

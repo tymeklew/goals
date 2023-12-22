@@ -10,7 +10,9 @@ pub fn validate_password(password: &str) -> Result<(), ValidationError> {
     let len = password.len() as u8;
 
     if len > MAX_PASSWORD_LEN || len < MIN_PASSWORD_LEN {
-        return Err(ValidationError::new("Invalid password len"));
+        return Err(ValidationError::new(
+            "Password must be between 3 and 20 characters long",
+        ));
     }
 
     for char in password.chars() {

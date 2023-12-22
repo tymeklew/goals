@@ -67,6 +67,9 @@ POST /goals/create
    "description" : "Work out at least once a week"
 }
 ```
+### Return
+If succesfull then will return a string with the id of the goal 
+
 ### Status Codes
 | Status Code | Description| 
 |-------------|------------|
@@ -81,7 +84,7 @@ POST /goals/create
 GET /goals/view
 ```
 ```http
-Get /goals/view/:id
+Get /goals/view/<id>
 ```
 First request is for viewing all of the goals wherease the second one is for viewing a specific one with that id
 
@@ -98,12 +101,14 @@ First request is for viewing all of the goals wherease the second one is for vie
 ```
 #### Multiple
 ```json
-[{
+[
+{
     "id" : "id of goal",
     "user_id" : "id of user",
     "title": " title",
     "description" : "description"
-}]
+},
+]
 ```
 ### Status Codes
 | Status Code | Description| 
