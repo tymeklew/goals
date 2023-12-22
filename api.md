@@ -1,15 +1,13 @@
-# Api
+# Authentication
+## Register
 
-## Authentication
-### Register
-
-#### Request 
+### Request 
 > **Content-Type : application/json** 
 ```http
 POST /auth/register
 ```
 
-#### Expected form
+### Expected form
 
 ```json
 {
@@ -20,21 +18,21 @@ POST /auth/register
 }
 ```
 
-#### Status Codes
+### Status Codes
 | Status Code | Description |
 |-------------|-------------|
 | 201         | Everything was succesful and the user has been added |
 | 400         | Malformed parameters or other bad request |
 | 409         | Conflict somebody else has the same email |
 | 500         | Something went wrong on the server most likley a db or a bcrypt error|
-### Login
-#### Request
+## Login
+### Request
 > **Content-Type : application/json** 
 ```http
 POST /auth/login
 ```
 
-#### Expected Form
+### Expected Form
 ```json
 {
     "email" : "testing@gmail.com",
@@ -42,7 +40,7 @@ POST /auth/login
 }
 ```
 
-#### Status Codes
+### Status Codes
 | Status Code | Description| 
 |-------------|------------|
 | 200         | Everything was succesful and a session_id cookie will be sent back |
@@ -50,24 +48,24 @@ POST /auth/login
 | 401         | Password was incorrect or user was not found | 
 | 500         | Server error something went wrong |
 
-## Goals 
+# Goals 
 
-### Create
-#### Request
+## Create
+### Request
 > **Content-Type : application/json** 
 ```http
 POST /goals/create
 ```
 > **There must be a valid session_id cookie in the request otherwise will be sent back a 401 (Unathorized)** 
 
-#### Expected Form
+### Expected Form
 ```json
 {
    "title" : "Workout",
    "description" : "Work out at least once a week"
 }
 ```
-#### Status Codes
+### Status Codes
 | Status Code | Description| 
 |-------------|------------|
 | 201         | Everything was succesful and a session_id cookie will be sent back |
