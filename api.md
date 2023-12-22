@@ -74,3 +74,39 @@ POST /goals/create
 | 400         | Malformed request body |  
 | 401         | Password was incorrect or user was not found | 
 | 500         | Server error something went wrong |
+
+## View
+### Request
+```http
+GET /goals/view
+Get /goals/view/:id
+```
+First request is for viewing all of the goals wherease the second one is for viewing a specific one with that id
+
+### Return values 
+```
+#### Single
+```json
+{
+    "id" : "id of goal",
+    "user_id" : "id of user",
+    "title: " title",
+    "description" : "description"
+}
+```
+#### Multiple
+```json
+[{
+    "id" : "id of goal",
+    "user_id" : "id of user",
+    "title: " title",
+    "description" : "description"
+}]
+```
+### Status Codes
+| Status Code | Description| 
+|-------------|------------|
+| 200         | Everything was succesful and a session_id cookie will be sent back |
+| 401         | Unauthorized |
+| 404         | Could not find the goal |
+| 500         | Server error something went wrong |

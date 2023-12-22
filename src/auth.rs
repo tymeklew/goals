@@ -111,6 +111,7 @@ pub async fn login(
 
     let mut cookie = Cookie::new("session_id", session_id.to_string());
     cookie.set_path("/");
+    cookie.set_http_only(true);
 
     Ok(jar.add(cookie))
 }
