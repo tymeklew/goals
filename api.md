@@ -99,7 +99,7 @@ First request is for viewing all of the goals wherease the second one is for vie
 [{
     "id" : "id of goal",
     "user_id" : "id of user",
-    "title: " title",
+    "title": " title",
     "description" : "description"
 }]
 ```
