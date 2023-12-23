@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
    first_name text NOT NULL,
    last_name text NOT NULL,
    password text NOT NULL,
+   admin boolean DEFAULT false,
    PRIMARY KEY (id)
 );
 
@@ -27,4 +28,6 @@ CREATE TABLE IF NOT EXISTS resets (
    id uuid NOT NULL,
    user_id uuid NOT NULL,
    token text NOT NULL
+   PRIMARY KEY (id),
+   FOREIGN KEY (user_id) REFERENCES users(id) 
 ); 

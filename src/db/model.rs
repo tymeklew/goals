@@ -23,6 +23,7 @@ pub struct User {
     pub first_name: String,
     pub last_name: String,
     pub password: String,
+    pub admin: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Associations, Identifiable, Queryable, Insertable)]

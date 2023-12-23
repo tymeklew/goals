@@ -16,7 +16,7 @@ use axum_extra::extract::CookieJar;
 use diesel::prelude::*;
 use diesel::SelectableHelper;
 use diesel_async::RunQueryDsl;
-use log2::{error, info, level, trace};
+use log2::info;
 use rand::{distributions::Alphanumeric, Rng};
 use uuid::Uuid;
 

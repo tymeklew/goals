@@ -6,7 +6,8 @@ table! {
         email -> Text,
         first_name -> Text,
         last_name -> Text,
-        password -> Text
+        password -> Text,
+        admin -> Bool
     }
 }
 

@@ -42,8 +42,7 @@ pub async fn register(
         .filter(users::email.eq(form.email.clone()))
         .count()
         .get_result::<i64>(&mut conn)
-        .await
-        .map_err(AppError::Diesel)?
+        .await?
         != 0
     {
         return Ok(StatusCode::CONFLICT);
@@ -54,7 +53,8 @@ pub async fn register(
         email: form.email,
         first_name: form.first_name,
         last_name: form.last_name,
-        password: hash(form.password, DEFAULT_COST).map_err(AppError::Bcrypt)?,
+        password: hash(form.password, DEFAULT_COST)?,
+        admin: false,
     };
 
     info!("New user id : {}", user.id);
@@ -62,8 +62,7 @@ pub async fn register(
     diesel::insert_into(users::table)
         .values(user)
         .execute(&mut conn)
-        .await
-        .map_err(AppError::Diesel)?;
+        .await?;
 
     Ok(StatusCode::CREATED)
 }
@@ -88,14 +87,13 @@ pub async fn login(
         .filter(users::email.eq(form.email))
         .get_result::<User>(&mut conn)
         .await
-        .optional()
-        .map_err(AppError::Diesel)?
+        .optional()?
     {
         Some(user) => user,
         None => return Err(AppError::Status(StatusCode::UNAUTHORIZED)),
     };
     // Verify if the form password is equal to to hash stored on the database
-    if !verify(form.password, &user.password).map_err(AppError::Bcrypt)? {
+    if !verify(form.password, &user.password)? {
         return Err(AppError::Status(StatusCode::UNAUTHORIZED));
     }
 
@@ -111,8 +109,7 @@ pub async fn login(
     diesel::insert_into(sessions::table)
         .values(session)
         .execute(&mut conn)
-        .await
-        .map_err(AppError::Diesel)?;
+        .await?;
 
     let mut cookie = Cookie::new("session_id", session_id.to_string());
     cookie.set_path("/");
@@ -137,8 +134,7 @@ pub async fn new_reset(
         .select(users::id)
         .first::<Uuid>(&mut conn)
         .await
-        .optional()
-        .map_err(AppError::Diesel)?
+        .optional()?
         .ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
 
     let reset = Reset {
@@ -150,8 +146,7 @@ pub async fn new_reset(
     diesel::insert_into(resets::table)
         .values(reset.clone())
         .execute(&mut conn)
-        .await
-        .map_err(AppError::Diesel)?;
+        .await?;
 
     let mail = Message::builder()
         .from(state.config.email.into())
@@ -166,7 +161,7 @@ pub async fn new_reset(
         ))
         .map_err(|_| AppError::Status(StatusCode::BAD_REQUEST))?;
 
-    state.mailer.send(mail).await.map_err(AppError::Lettre)?;
+    state.mailer.send(mail).await?;
 
     Ok(StatusCode::OK)
 }
@@ -188,28 +183,25 @@ pub async fn reset(
     let reset = resets::table
         .filter(resets::id.eq(form.reset_id))
         .first::<Reset>(&mut conn)
-        .await
-        .map_err(AppError::Diesel)?;
+        .await?;
 
     if reset.token != form.token {
         return Err(AppError::Status(StatusCode::UNAUTHORIZED));
     }
 
-    let hashed = hash(form.password, DEFAULT_COST).map_err(AppError::Bcrypt)?;
+    let hashed = hash(form.password, DEFAULT_COST)?;
 
     // Update the user password with the hashed updated password
     diesel::update(users::table)
         .set(users::password.eq(hashed))
         .execute(&mut conn)
-        .await
-        .map_err(AppError::Diesel)?;
+        .await?;
 
     // Delete reset in database
     diesel::delete(resets::table)
         .filter(resets::id.eq(reset.id))
         .execute(&mut conn)
-        .await
-        .map_err(AppError::Diesel)?;
+        .await?;
 
     Ok(StatusCode::OK)
 }

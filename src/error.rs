@@ -4,22 +4,29 @@ use diesel::result::DatabaseErrorKind as DbErrorKind;
 use diesel::result::Error as DieselError;
 use lettre::transport::smtp::Error as LettreError;
 use log2::error;
+use thiserror::Error;
 use validator::ValidationErrors;
 use validator::ValidationErrorsKind;
 
+#[derive(Error, Debug)]
 pub enum AppError {
-    // Error for getting connection to database
+    #[error("Db connection errorr")]
     Deadpool,
     // Diesel error
-    Diesel(DieselError),
+    #[error("Database error")]
+    Diesel(#[from] DieselError),
     // Lettre
-    Lettre(LettreError),
+    #[error("Lettre errror")]
+    Lettre(#[from] LettreError),
     // Bcrypt
-    Bcrypt(BcryptError),
+    #[error("Bcrypt error")]
+    Bcrypt(#[from] BcryptError),
     // Status
+    #[error("Just some status code")]
     Status(StatusCode),
     // Validation
-    Validate(ValidationErrors),
+    #[error("Failed to validate input")]
+    Validate(#[from] ValidationErrors),
 }
 
 impl IntoResponse for AppError {
@@ -53,16 +60,5 @@ fn display_validation_error(error: ValidationErrorsKind) -> String {
             return errors.first().unwrap().code.to_string() + "\n";
         }
         _ => String::new(),
-    }
-}
-
-impl std::fmt::Display for AppError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Deadpool => write!(f, "Diesel error idk"),
-            Self::Diesel(err) => err.fmt(f),
-            Self::Bcrypt(err) => err.fmt(f),
-            _ => write!(f, ""),
-        }
     }
 }
