@@ -1,18 +1,14 @@
-use axum::extract::State;
 use axum::Router;
 use axum::{
     middleware,
     routing::{get, post},
 };
+use bb8::Pool;
 use config::Config;
-use diesel_async::{
-    pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
-    AsyncPgConnection,
-};
+use diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env::var;
-use tokio::sync::mpsc::{channel, Sender};
 use tower_http::services::{ServeDir, ServeFile};
 
 mod auth;
@@ -26,13 +22,11 @@ mod validate;
 #[derive(Clone)]
 pub struct AppState {
     // Db connection pool
-    pool: Pool<AsyncPgConnection>,
+    pool: Pool<AsyncDieselConnectionManager<AsyncPgConnection>>,
     // Smtp mailer to send emails
     mailer: AsyncSmtpTransport<Tokio1Executor>,
     // Config for some constants and stuf
     config: Config,
-    // Sender
-    sender: Sender<Messsage>,
 }
 
 impl AppState {
@@ -41,7 +35,7 @@ impl AppState {
             var("DB_URL").expect("Failed to load DB_URL"),
         );
 
-        let pool = Pool::builder(config).build().unwrap();
+        let pool = Pool::builder().build(config).await.unwrap();
 
         let creds = Credentials::new(
             var("SMTP_USERNAME").expect("Failed to load SMTP_USERNAME"),
@@ -55,22 +49,10 @@ impl AppState {
         .credentials(creds)
         .build();
 
-        let (tx, mut rx) = channel::<Messsage>(100);
-
-        tokio::spawn(async move {
-            loop {
-                println!("Meow");
-                if let Ok(i) = rx.try_recv() {
-                    println!("got = {:?}", i);
-                }
-            }
-        });
-
         AppState {
             pool,
             mailer,
             config: Config::load(),
-            sender: tx,
         }
     }
 }
@@ -94,6 +76,8 @@ async fn main() {
 
     let state = AppState::new().await;
 
+    print_type_of(&state.pool.get().await);
+
     let app = Router::new()
         .route("/api/goals/create", post(goals::create))
         .route("/api/goals/view", get(goals::view_all))
@@ -103,7 +87,6 @@ async fn main() {
             state.clone(),
             util::authorization,
         ))
-        .route("/api/testing", get(testing))
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/reset/:email", post(auth::new_reset))
@@ -125,7 +108,6 @@ async fn main() {
         .expect("Failed to serve app");
 }
 
-async fn testing(State(state): State<AppState>) -> &'static str {
-    state.sender.send(Messsage::Testing).await.unwrap();
-    "testing"
+fn print_type_of<T>(_: &T) {
+    println!("{}", std::any::type_name::<T>())
 }

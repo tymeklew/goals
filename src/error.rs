@@ -11,7 +11,7 @@ use validator::ValidationErrorsKind;
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Db connection errorr")]
-    Deadpool,
+    Bb8(#[from] bb8::RunError<diesel_async::pooled_connection::PoolError>),
     // Diesel error
     #[error("Database error")]
     Diesel(#[from] DieselError),
@@ -60,5 +60,11 @@ fn display_validation_error(error: ValidationErrorsKind) -> String {
             return errors.first().unwrap().code.to_string() + "\n";
         }
         _ => String::new(),
+    }
+}
+
+impl From<StatusCode> for AppError {
+    fn from(value: StatusCode) -> Self {
+        Self::Status(value)
     }
 }

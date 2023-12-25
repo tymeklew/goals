@@ -28,13 +28,13 @@ pub async fn authorization(
 ) -> Result<Response, AppError> {
     let val = jar
         .get("session_id")
-        .ok_or(AppError::Status(StatusCode::UNAUTHORIZED))?
+        .ok_or(StatusCode::UNAUTHORIZED)?
         .value()
         .trim();
 
     let session_id = Uuid::parse_str(val).unwrap();
 
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
 
     // Get the user from the session_id
     let user = users::table
@@ -43,9 +43,8 @@ pub async fn authorization(
         .select(User::as_select())
         .first::<User>(&mut conn)
         .await
-        .optional()
-        .map_err(AppError::Diesel)?
-        .ok_or(AppError::Status(StatusCode::UNAUTHORIZED))?;
+        .optional()?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
     request.extensions_mut().insert(user);
     Ok(next.run(request).await)

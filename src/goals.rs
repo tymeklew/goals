@@ -40,7 +40,7 @@ pub async fn create(
 
     let goal_id = goal.id;
 
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
 
     diesel::insert_into(goals::table)
         .values(goal)
@@ -54,7 +54,7 @@ pub async fn view_all(
     Extension(user): Extension<User>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Goal>>, AppError> {
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
 
     let goals: Vec<Goal> = Goal::belonging_to(&user).load::<Goal>(&mut conn).await?;
 
@@ -66,14 +66,14 @@ pub async fn view_one(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
 ) -> Result<Json<Goal>, AppError> {
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
 
     let goal = Goal::belonging_to(&user)
         .filter(goals::id.eq(id))
         .first::<Goal>(&mut conn)
         .await
         .optional()?
-        .ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
+        .ok_or(StatusCode::NOT_FOUND)?;
 
     Ok(Json(goal))
 }

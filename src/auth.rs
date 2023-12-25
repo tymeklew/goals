@@ -33,10 +33,10 @@ pub async fn register(
     State(state): State<AppState>,
     Json(form): Json<RegisterForm>,
 ) -> Result<impl IntoResponse, AppError> {
-    form.validate().map_err(AppError::Validate)?;
+    form.validate()?;
 
     // Db connection
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
     // Check for conflict before hashing because hashing takes a while
     if users::table
         .filter(users::email.eq(form.email.clone()))
@@ -45,7 +45,7 @@ pub async fn register(
         .await?
         != 0
     {
-        return Ok(StatusCode::CONFLICT);
+        return Err(AppError::Status(StatusCode::CONFLICT));
     };
 
     let user = User {
@@ -81,17 +81,14 @@ pub async fn login(
 ) -> Result<CookieJar, AppError> {
     form.validate().map_err(AppError::Validate)?;
 
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
 
-    let user = match users::table
+    let user = users::table
         .filter(users::email.eq(form.email))
         .get_result::<User>(&mut conn)
         .await
         .optional()?
-    {
-        Some(user) => user,
-        None => return Err(AppError::Status(StatusCode::UNAUTHORIZED)),
-    };
+        .ok_or(StatusCode::UNAUTHORIZED)?;
     // Verify if the form password is equal to to hash stored on the database
     if !verify(form.password, &user.password)? {
         return Err(AppError::Status(StatusCode::UNAUTHORIZED));
@@ -125,9 +122,7 @@ pub async fn new_reset(
     Path(email): Path<String>,
     State(state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
-    info!("Resetting {email}");
-
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
 
     let user_id = users::table
         .filter(users::email.eq(email.clone()))
@@ -135,7 +130,7 @@ pub async fn new_reset(
         .first::<Uuid>(&mut conn)
         .await
         .optional()?
-        .ok_or(AppError::Status(StatusCode::NOT_FOUND))?;
+        .ok_or(StatusCode::NOT_FOUND)?;
 
     let reset = Reset {
         id: Uuid::new_v4(),
@@ -150,16 +145,14 @@ pub async fn new_reset(
 
     let mail = Message::builder()
         .from(state.config.email.into())
-        .to(email
-            .parse()
-            .map_err(|_| AppError::Status(StatusCode::BAD_REQUEST))?)
+        .to(email.parse().map_err(|_| StatusCode::BAD_REQUEST)?)
         .subject("Password reset")
         .header(ContentType::TEXT_PLAIN)
         .body(format!(
             "{}/reset?token={}&reset_id={}",
             state.config.domain, reset.token, reset.id
         ))
-        .map_err(|_| AppError::Status(StatusCode::BAD_REQUEST))?;
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     state.mailer.send(mail).await?;
 
@@ -178,7 +171,7 @@ pub async fn reset(
     State(state): State<AppState>,
     Json(form): Json<ResetForm>,
 ) -> Result<StatusCode, AppError> {
-    let mut conn = state.pool.get().await.map_err(|_| AppError::Deadpool)?;
+    let mut conn = state.pool.get().await?;
 
     let reset = resets::table
         .filter(resets::id.eq(form.reset_id))

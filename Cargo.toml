@@ -1,4 +1,3 @@
-workspace = { members = ["scheduler"] }
 [package]
 name = "goals"
 version = "0.1.0"
@@ -8,11 +7,10 @@ edition = "2021"
 tokio = {version = "1.35.1" , features = ["full" , "sync"]}
 axum = {version = "0.7.2"  , features = ["macros"]}
 diesel = {version = "2.1.4" , features = ["uuid"]}
-diesel-async = {version = "0.4.1" , features = ["deadpool" , "postgres"]}
+diesel-async = {version = "0.4.1" , features = ["bb8" , "postgres"]}
 serde = {version = "1.0.193" , features = ["derive"]}
 dotenv = "0.15.0"
 uuid = {version = "1.6.1" , features = ["v4" , "serde"]}
-deadpool = {version = "0.10.0" , features = ["managed" ,"rt_tokio_1"]}
 axum-extra = {version = "0.9.0" , features = ["cookie"]}
 bcrypt = "0.15.0"
 validator = {version = "0.16.1" , features = ["derive"]}
@@ -21,3 +19,4 @@ rand = "0.8.5"
 log2 = "0.1.10"
 lettre = {version = "0.11.2" , features = ["tokio1" , "tokio1-native-tls"]}
 thiserror = "1.0.51"
+bb8 = "0.8.1"
