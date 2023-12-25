@@ -14,7 +14,6 @@ use diesel::OptionalExtension;
 use diesel_async::RunQueryDsl;
 use lettre::message::header::ContentType;
 use lettre::{AsyncTransport, Message};
-use log2::info;
 use serde::Deserialize;
 use uuid::Uuid;
 use validator::Validate;
@@ -56,8 +55,6 @@ pub async fn register(
         password: hash(form.password, DEFAULT_COST)?,
         admin: false,
     };
-
-    info!("New user id : {}", user.id);
 
     diesel::insert_into(users::table)
         .values(user)
@@ -111,7 +108,6 @@ pub async fn login(
     let mut cookie = Cookie::new("session_id", session_id.to_string());
     cookie.set_path("/");
     cookie.set_http_only(true);
-    cookie.set_domain(state.config.domain);
 
     Ok(jar.add(cookie))
 }

@@ -16,7 +16,6 @@ use axum_extra::extract::CookieJar;
 use diesel::prelude::*;
 use diesel::SelectableHelper;
 use diesel_async::RunQueryDsl;
-use log2::info;
 use rand::{distributions::Alphanumeric, Rng};
 use uuid::Uuid;
 
@@ -48,14 +47,6 @@ pub async fn authorization(
 
     request.extensions_mut().insert(user);
     Ok(next.run(request).await)
-}
-
-pub async fn logging(request: Request, next: Next) -> Result<Response, AppError> {
-    println!("Logg");
-    info!("Testing");
-    let res = next.run(request).await;
-    info!("Testing");
-    Ok(res)
 }
 
 pub fn generate_token() -> String {

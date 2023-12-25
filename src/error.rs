@@ -2,27 +2,28 @@ use axum::{http::StatusCode, response::IntoResponse};
 use bcrypt::BcryptError;
 use diesel::result::DatabaseErrorKind as DbErrorKind;
 use diesel::result::Error as DieselError;
+use diesel_async::pooled_connection::PoolError;
 use lettre::transport::smtp::Error as LettreError;
-use log2::error;
 use thiserror::Error;
+use tracing::error;
 use validator::ValidationErrors;
 use validator::ValidationErrorsKind;
 
 #[derive(Error, Debug)]
 pub enum AppError {
-    #[error("Db connection errorr")]
-    Bb8(#[from] bb8::RunError<diesel_async::pooled_connection::PoolError>),
+    #[error("Database connection error : {0}")]
+    Bb8(#[from] bb8::RunError<PoolError>),
     // Diesel error
-    #[error("Database error")]
+    #[error("Diesel database error : {0}")]
     Diesel(#[from] DieselError),
     // Lettre
-    #[error("Lettre errror")]
+    #[error("Lettre Error : {0}")]
     Lettre(#[from] LettreError),
     // Bcrypt
-    #[error("Bcrypt error")]
+    #[error("Bcrypt error : {0}")]
     Bcrypt(#[from] BcryptError),
     // Status
-    #[error("Just some status code")]
+    #[error("Status Code : {0}")]
     Status(StatusCode),
     // Validation
     #[error("Failed to validate input")]
@@ -31,7 +32,8 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
-        error!("Error : {self}");
+        error!("{self}");
+
         match self {
             Self::Status(status) => status.into_response(),
             Self::Validate(err) => {

@@ -10,7 +10,10 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env::var;
 use tower_http::services::{ServeDir, ServeFile};
+use tower_http::trace::{self, TraceLayer};
+use tracing::Level;
 
+mod account;
 mod auth;
 mod config;
 mod db;
@@ -66,22 +69,18 @@ pub enum Messsage {
 async fn main() {
     dotenv::dotenv().expect("Failed to load env variables");
 
-    // Logger setup
-    log2::open("log.txt")
-        .module(true)
-        .level("info")
-        .tee(true)
-        .start()
-        .set_level("info");
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_writer(std::io::stderr)
+        .init();
 
     let state = AppState::new().await;
-
-    print_type_of(&state.pool.get().await);
 
     let app = Router::new()
         .route("/api/goals/create", post(goals::create))
         .route("/api/goals/view", get(goals::view_all))
         .route("/api/goals/view/:id", get(goals::view_one))
+        .route("/api/account/update", post(account::update))
         // Everything above requirest authentication via session_id cookies
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
@@ -96,7 +95,12 @@ async fn main() {
             ServeDir::new("./client/dist")
                 .not_found_service(ServeFile::new("./client/dist/index.html")),
         )
-        .route_layer(middleware::from_fn(util::logging))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO))
+                .on_request(trace::DefaultOnRequest::new().level(Level::INFO)),
+        )
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(var("PORT").expect("Failed to load PORT"))
@@ -106,8 +110,4 @@ async fn main() {
     axum::serve(listener, app)
         .await
         .expect("Failed to serve app");
-}
-
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
 }

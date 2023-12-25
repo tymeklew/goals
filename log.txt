@@ -1,5 +1,0 @@
-[2023-12-22 18:37:32.096] [INFO] auth: Resetting email
-[2023-12-22 18:38:20.258] [INFO] auth: Resetting email
-[2023-12-22 18:42:39.891] [INFO] auth: Resetting tymek.lewandowski@gmail.com
-[2023-12-22 19:55:07.237] [INFO] auth: Resetting tymek.lewandowski@gmail.com
-[2023-12-22 20:06:07.246] [ERROR] error: Error : 
