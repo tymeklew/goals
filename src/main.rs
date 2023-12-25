@@ -1,3 +1,4 @@
+use axum::routing::delete;
 use axum::Router;
 use axum::{
     middleware,
@@ -81,6 +82,7 @@ async fn main() {
         .route("/api/goals/view", get(goals::view_all))
         .route("/api/goals/view/:id", get(goals::view_one))
         .route("/api/account/update", post(account::update))
+        .route("/api/account/delete", delete(account::delete))
         // Everything above requirest authentication via session_id cookies
         .route_layer(middleware::from_fn_with_state(
             state.clone(),

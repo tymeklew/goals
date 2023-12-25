@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use crate::{
     db::{
         model::User,
@@ -38,7 +40,11 @@ pub async fn authorization(
     // Get the user from the session_id
     let user = users::table
         .inner_join(sessions::table)
-        .filter(sessions::id.eq(session_id))
+        .filter(
+            sessions::id
+                .eq(session_id)
+                .and(sessions::expires_at.gt(SystemTime::now())),
+        )
         .select(User::as_select())
         .first::<User>(&mut conn)
         .await

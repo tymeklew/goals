@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::db::model::{Reset, Session};
 use crate::db::schema::{resets, sessions, users};
 use crate::error::AppError;
@@ -94,6 +96,8 @@ pub async fn login(
     let session = Session {
         id: Uuid::new_v4(),
         user_id: user.id,
+        expires_at: SystemTime::now()
+            + Duration::from_secs(60 * 60 * 24 * state.config.session_time),
     };
 
     // Clone session.id because when inserting it will consume it and I need to use it later

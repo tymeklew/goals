@@ -23,7 +23,8 @@ table! {
 table! {
     sessions (id) {
         id -> Uuid,
-        user_id -> Uuid
+        user_id -> Uuid,
+        expires_at -> Timestamp
     }
 }
 

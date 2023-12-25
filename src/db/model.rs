@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use super::schema::*;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -54,6 +56,7 @@ pub struct Goal {
 pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,
+    pub expires_at: SystemTime,
 }
 
 #[derive(
